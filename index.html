@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jaxx's Oefeningen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@600;800&family=Andika:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sun:#FFC93C; --sky:#3AA6FF; --grass:#4CAF6D; --coral:#FF6B5B;
+    --cream:#FFF8ED; --ink:#2B2B2B; --white:#FFFFFF;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-padding-top:env(safe-area-inset-top,0px);}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--cream); color:var(--ink);
+    font-family:'Nunito',sans-serif;
+    display:flex; align-items:center; justify-content:center;
+    min-height:100%;
+    overflow-x:hidden;
+  }
+  h1,h2,.big{font-family:'Baloo 2',sans-serif;}
+  #app{width:100%; max-width:480px; padding:20px; position:relative;}
+
+  /* header */
+  .topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  .stars{display:flex; align-items:center; gap:6px; background:var(--white); border:3px solid var(--ink); border-radius:999px; padding:6px 14px; font-family:'Baloo 2'; font-weight:700; font-size:18px;}
+
+  /* home screen */
+  .title{font-size:30px; font-weight:800; text-align:center; margin:6px 0 4px;}
+  .subtitle{text-align:center; font-weight:600; color:#5a5347; margin:0 0 22px;}
+  .choice-grid{display:grid; gap:16px;}
+  .choice-card{
+    border:none; border-radius:26px; padding:22px 18px; text-align:left;
+    font-family:'Baloo 2'; font-size:24px; font-weight:700; color:var(--white);
+    display:flex; align-items:center; gap:14px; cursor:pointer;
+    box-shadow:0 6px 0 rgba(0,0,0,0.15);
+    transition:transform .08s ease;
+  }
+  .choice-card:active{transform:translateY(4px); box-shadow:0 2px 0 rgba(0,0,0,0.15);}
+  .choice-card .emoji{font-size:36px;}
+  .choice-rekenen{background:var(--sky);}
+  .choice-taal{background:var(--coral);}
+  .choice-splitsen{background:var(--grass);}
+
+  /* exercise screen */
+  .exercise-card{
+    background:var(--white); border-radius:28px; padding:28px 22px;
+    border:4px solid var(--ink);
+  }
+  .progress-row{display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;}
+  .back-btn{background:none; border:none; font-size:22px; cursor:pointer; font-family:'Baloo 2'; font-weight:700;}
+  .question{font-size:40px; font-weight:800; text-align:center; margin:10px 0 26px; font-family:'Baloo 2';}
+  .question .obj{font-size:34px;}
+  .split-house{display:inline-flex; flex-direction:column; align-items:center;}
+  .split-row{display:flex; align-items:center; gap:14px; margin-top:12px;}
+  .split-box{display:flex; align-items:center; justify-content:center;}
+  .split-unknown{
+    background:var(--white); border:3px solid var(--ink); border-radius:10px;
+    width:56px; height:56px; font-size:26px; font-weight:800;
+  }
+  .split-plus{font-size:26px;}
+  .number-card{
+    display:grid; grid-template-columns:repeat(2, 18px); grid-auto-rows:18px;
+    gap:5px; background:#7FA0BE; border:2px solid #55738F; border-radius:8px;
+    padding:9px;
+  }
+  .sq{width:18px; height:18px; background:#48423A; border-radius:3px;}
+  .sq.empty{background:transparent;}
+  .answer-btn .number-card{grid-template-columns:repeat(2, 14px); grid-auto-rows:14px; gap:4px; padding:7px;}
+  .answer-btn .sq{width:14px; height:14px;}
+  .answer-btn{display:inline-flex; align-items:center; justify-content:center;}
+  .answers{display:grid; gap:14px;}
+  .answer-btn{
+    border:3px solid var(--ink); background:var(--white); border-radius:18px;
+    padding:16px; font-family:'Baloo 2'; font-size:24px; font-weight:700; cursor:pointer;
+    transition:transform .08s ease;
+  }
+  .answer-btn:active{transform:scale(0.97);}
+  .answer-btn.correct{background:var(--grass); color:var(--white); border-color:var(--grass);}
+  .answer-btn.wrong{background:var(--coral); color:var(--white); border-color:var(--coral);}
+  .feedback{text-align:center; font-family:'Baloo 2'; font-weight:700; font-size:20px; min-height:30px; margin-top:16px;}
+  .feedback.good{color:var(--grass);}
+  .feedback.bad{color:var(--coral);}
+
+  body.mode-taal .question{font-family:'Andika', sans-serif; letter-spacing:6px;}
+  body.mode-taal .answer-btn{font-family:'Andika', sans-serif; font-size:30px;}
+
+  .speak-btn{
+    display:flex; align-items:center; justify-content:center; gap:8px; margin:0 auto 18px;
+    background:var(--sun); border:3px solid var(--ink); border-radius:999px;
+    padding:10px 20px; font-family:'Baloo 2'; font-weight:700; font-size:17px; cursor:pointer;
+  }
+  .speak-btn:active{transform:scale(0.97);}
+
+  .hidden{display:none !important;}
+  .reset-link{display:block; text-align:center; margin-top:22px; font-size:13px; color:#9a9284; background:none; border:none; text-decoration:underline; cursor:pointer;}
+  .parent-link{display:block; text-align:center; margin:14px auto 0; font-size:13px; color:#6b6255; background:none; border:none; cursor:pointer; font-weight:700;}
+
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center;
+    padding:20px; z-index:20;
+  }
+  .modal-box{background:var(--white); border-radius:22px; padding:26px 22px; width:100%; max-width:320px; text-align:center; border:4px solid var(--ink);}
+  .modal-title{font-family:'Baloo 2'; font-weight:700; font-size:19px; margin-bottom:16px;}
+  .passcode-input{
+    width:140px; text-align:center; font-size:28px; letter-spacing:14px; padding:10px 0 10px 14px;
+    border:3px solid var(--ink); border-radius:12px; font-family:'Baloo 2'; background:var(--cream); color:var(--ink);
+  }
+  .passcode-error{color:var(--coral); font-weight:700; font-size:13px; min-height:20px; margin-top:8px;}
+  .modal-actions{display:flex; gap:10px; margin-top:16px;}
+  .modal-btn{flex:1; padding:12px; border-radius:14px; border:3px solid var(--ink); font-family:'Baloo 2'; font-weight:700; font-size:15px; cursor:pointer;}
+  .modal-btn.primary{background:var(--sky); color:var(--white);}
+  .modal-btn.secondary{background:var(--white);}
+
+  .history-summary{display:flex; gap:10px; margin:16px 0;}
+  .history-stat{flex:1; background:var(--white); border:3px solid var(--ink); border-radius:16px; padding:12px; text-align:center;}
+  .history-stat .num{font-family:'Baloo 2'; font-weight:800; font-size:24px;}
+  .history-stat .lbl{font-size:12px; color:#6b6255;}
+  .history-list{display:flex; flex-direction:column; gap:8px; max-height:60vh; overflow-y:auto;}
+  .history-item{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--white); border:2px solid var(--ink); border-radius:14px; padding:10px 14px;
+  }
+  .history-item.wrong{border-color:var(--coral);}
+  .history-item.right{border-color:var(--grass);}
+  .history-q{font-weight:700; font-size:15px;}
+  .history-meta{font-size:12px; color:#6b6255;}
+  .history-mark{font-size:18px;}
+  .history-empty{text-align:center; color:#9a9284; margin-top:30px;}
+
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --cream:#221D14; --ink:#F5EFE3; --white:#332C1F;
+    }
+    body{background:var(--cream);}
+    .exercise-card{border-color:#4a4130;}
+    .answer-btn{border-color:#4a4130; background:#332C1F; color:var(--ink);}
+  }
+  :root[data-theme="dark"]{
+    --cream:#221D14; --ink:#F5EFE3; --white:#332C1F;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="topbar">
+    <div class="big" style="font-size:20px;">🌤️ Hoi Jaxx!</div>
+    <div class="stars">⭐ <span id="starCount">0</span></div>
+  </div>
+
+  <!-- HOME -->
+  <div id="home">
+    <div class="title">Wat wil jij oefenen, Jaxx?</div>
+    <div class="subtitle">Kies een spelletje om te starten</div>
+    <div class="choice-grid">
+      <button class="choice-card choice-taal" onclick="startGame('taal')">
+        <span class="emoji">🔤</span> Taal
+      </button>
+      <button class="choice-card choice-splitsen" onclick="startGame('splitsen')">
+        <span class="emoji">🧩</span> Splitsen
+      </button>
+    </div>
+    <button class="reset-link" onclick="resetProgress()">Sterren opnieuw beginnen</button>
+    <button class="parent-link" onclick="openPasscode()">🔒 Voortgang bekijken (voor ouders)</button>
+  </div>
+
+  <!-- PASSCODE MODAL -->
+  <div id="passcodeModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-title">Voer de pascode in</div>
+      <input id="passcodeInput" class="passcode-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off">
+      <div id="passcodeError" class="passcode-error"></div>
+      <div class="modal-actions">
+        <button class="modal-btn secondary" onclick="closePasscode()">Annuleren</button>
+        <button class="modal-btn primary" onclick="checkPasscode()">Bevestigen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY SCREEN -->
+  <div id="historyScreen" class="hidden">
+    <div class="topbar">
+      <button class="back-btn" onclick="closeHistory()">← Terug</button>
+      <div class="big" style="font-size:18px;">Voortgang van Jaxx</div>
+    </div>
+    <div id="historySummary" class="history-summary"></div>
+    <div id="historyList" class="history-list"></div>
+    <button class="reset-link" onclick="clearHistory()">Geschiedenis wissen</button>
+  </div>
+
+  <!-- EXERCISE -->
+  <div id="exercise" class="hidden">
+    <div class="exercise-card">
+      <div class="progress-row">
+        <button class="back-btn" onclick="goHome()">← Terug</button>
+        <div id="progressLabel" style="font-family:'Baloo 2'; font-weight:700;"></div>
+      </div>
+      <button id="speakBtn" class="speak-btn hidden" onclick="speakWord(currentSpeakWord)">🔊 Luister</button>
+      <div class="question" id="questionText"></div>
+      <div class="answers" id="answers"></div>
+      <div class="feedback" id="feedback"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ---------- state ----------
+  let stars = 0;
+  try {
+    stars = parseInt(localStorage.getItem('leerapp_stars') || '0', 10) || 0;
+  } catch(e) { stars = 0; }
+  document.getElementById('starCount').textContent = stars;
+
+  let currentMode = null;
+  let roundIndex = 0;
+  const ROUNDS_PER_SESSION = 8;
+  let currentAnswer = null;
+  let locked = false;
+  let currentSpeakWord = null;
+  let currentQuestionLabel = '';
+  const PARENT_CODE = '2020';
+
+  let history = [];
+  try {
+    history = JSON.parse(localStorage.getItem('leerapp_history') || '[]');
+  } catch(e) { history = []; }
+
+  function logAttempt(isCorrect, givenLabel, correctLabel){
+    history.unshift({
+      ts: Date.now(),
+      mode: currentMode,
+      question: currentQuestionLabel,
+      given: givenLabel,
+      correct: correctLabel,
+      isCorrect: isCorrect
+    });
+    if (history.length > 200) history = history.slice(0, 200);
+    try { localStorage.setItem('leerapp_history', JSON.stringify(history)); } catch(e) {}
+  }
+
+  const CORRECT_MESSAGES = [
+    'Goed zo!',
+    'Toppie!',
+    'Super gedaan!',
+    'Knap hoor, Djaks!',
+    'Dat is juist!',
+    'Yes, helemaal goed!'
+  ];
+  const MILESTONE_MESSAGES = [
+    (n) => 'Goed bezig Djaks, je hebt al ' + n + ' goede antwoorden!',
+    (n) => 'Wow Djaks, dat zijn er al ' + n + ' juist!',
+    (n) => 'Djaks, je bent een kei! Alweer ' + n + ' juiste antwoorden!',
+    (n) => 'Petje af Djaks! ' + n + ' juiste antwoorden, knap gedaan!',
+    (n) => 'Yes Djaks! ' + n + ' keer goed geantwoord, ga zo door!'
+  ];
+  const WRONG_MESSAGES = [
+    'Oei, een foutje!',
+    'Bijna! Probeer het nog eens.',
+    'Niet getreurd, de volgende lukt vast wel.',
+    'Oeps, dat was hem niet helemaal.',
+    'Hmm, nog niet helemaal juist, Djaks.'
+  ];
+  let lastMilestoneIdx = -1;
+  let lastWrongIdx = -1;
+  let lastCorrectIdx = -1;
+
+  function randomCorrectMessage(){
+    let idx;
+    do { idx = Math.floor(Math.random() * CORRECT_MESSAGES.length); } while (CORRECT_MESSAGES.length > 1 && idx === lastCorrectIdx);
+    lastCorrectIdx = idx;
+    return CORRECT_MESSAGES[idx];
+  }
+
+  function randomWrongMessage(){
+    let idx;
+    do { idx = Math.floor(Math.random() * WRONG_MESSAGES.length); } while (WRONG_MESSAGES.length > 1 && idx === lastWrongIdx);
+    lastWrongIdx = idx;
+    return WRONG_MESSAGES[idx];
+  }
+  function randomMilestoneMessage(n){
+    let idx;
+    do { idx = Math.floor(Math.random() * MILESTONE_MESSAGES.length); } while (MILESTONE_MESSAGES.length > 1 && idx === lastMilestoneIdx);
+    lastMilestoneIdx = idx;
+    return MILESTONE_MESSAGES[idx](n);
+  }
+
+  function speakWord(word){
+    if (!word) return;
+    try {
+      if (!('speechSynthesis' in window)) return;
+      speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(word);
+      utter.lang = 'nl-NL';
+      utter.rate = 0.85;
+      if (dutchVoice) utter.voice = dutchVoice;
+      speechSynthesis.speak(utter);
+    } catch(e) {}
+  }
+  let dutchVoice = null;
+  function loadDutchVoice(){
+    try {
+      const voices = speechSynthesis.getVoices();
+      dutchVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('nl')) || null;
+    } catch(e) {}
+  }
+  if ('speechSynthesis' in window){
+    loadDutchVoice();
+    speechSynthesis.onvoiceschanged = loadDutchVoice;
+  }
+
+  function saveStars(){
+    try { localStorage.setItem('leerapp_stars', String(stars)); } catch(e) {}
+  }
+  function resetProgress(){
+    stars = 0; saveStars();
+    document.getElementById('starCount').textContent = stars;
+  }
+
+  function openPasscode(){
+    document.getElementById('passcodeInput').value = '';
+    document.getElementById('passcodeError').textContent = '';
+    document.getElementById('passcodeModal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('passcodeInput').focus(), 50);
+  }
+  function closePasscode(){
+    document.getElementById('passcodeModal').classList.add('hidden');
+  }
+  function checkPasscode(){
+    const val = document.getElementById('passcodeInput').value;
+    if (val === PARENT_CODE){
+      closePasscode();
+      openHistory();
+    } else {
+      document.getElementById('passcodeError').textContent = 'Foute pascode, probeer opnieuw.';
+    }
+  }
+
+  function openHistory(){
+    document.getElementById('home').classList.add('hidden');
+    document.getElementById('historyScreen').classList.remove('hidden');
+    renderHistory();
+  }
+  function closeHistory(){
+    document.getElementById('historyScreen').classList.add('hidden');
+    document.getElementById('home').classList.remove('hidden');
+  }
+  function clearHistory(){
+    history = [];
+    try { localStorage.setItem('leerapp_history', '[]'); } catch(e) {}
+    renderHistory();
+  }
+
+  function renderHistory(){
+    const total = history.length;
+    const correctCount = history.filter(h => h.isCorrect).length;
+    document.getElementById('historySummary').innerHTML =
+      '<div class="history-stat"><div class="num">' + total + '</div><div class="lbl">Gemaakt</div></div>' +
+      '<div class="history-stat"><div class="num">' + correctCount + '</div><div class="lbl">Juist</div></div>' +
+      '<div class="history-stat"><div class="num">' + (total - correctCount) + '</div><div class="lbl">Fout</div></div>';
+
+    const listEl = document.getElementById('historyList');
+    if (total === 0){
+      listEl.innerHTML = '<div class="history-empty">Nog geen oefeningen gemaakt.</div>';
+      return;
+    }
+    listEl.innerHTML = history.map(h => {
+      const d = new Date(h.ts);
+      const dateStr = d.toLocaleDateString('nl-BE', {day:'2-digit', month:'2-digit'}) + ' ' + d.toLocaleTimeString('nl-BE', {hour:'2-digit', minute:'2-digit'});
+      const modeLabel = h.mode === 'taal' ? '🔤 Taal' : '🧩 Splitsen';
+      const answerLine = h.isCorrect ? ('Antwoord: ' + h.given) : ('Antwoord: ' + h.given + ' — juist was: ' + h.correct);
+      return '<div class="history-item ' + (h.isCorrect ? 'right' : 'wrong') + '">' +
+        '<div><div class="history-q">' + h.question + '</div>' +
+        '<div class="history-meta">' + modeLabel + ' · ' + answerLine + ' · ' + dateStr + '</div></div>' +
+        '<div class="history-mark">' + (h.isCorrect ? '✅' : '❌') + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function goHome(){
+    try { speechSynthesis.cancel(); } catch(e) {}
+    document.body.classList.remove('mode-taal');
+    document.getElementById('exercise').classList.add('hidden');
+    document.getElementById('home').classList.remove('hidden');
+  }
+
+  function startGame(mode){
+    currentMode = mode;
+    roundIndex = 0;
+    document.body.classList.toggle('mode-taal', mode === 'taal');
+    document.getElementById('home').classList.add('hidden');
+    document.getElementById('exercise').classList.remove('hidden');
+    nextRound();
+  }
+
+  function nextRound(){
+    locked = false;
+    roundIndex++;
+    if (roundIndex > ROUNDS_PER_SESSION){
+      document.getElementById('questionText').textContent = 'Super gedaan, Jaxx! 🎉';
+      document.getElementById('answers').innerHTML = '';
+      document.getElementById('feedback').textContent = 'Je hebt deze ronde afgemaakt!';
+      document.getElementById('feedback').className = 'feedback good';
+      document.getElementById('progressLabel').textContent = '';
+      setTimeout(goHome, 1800);
+      return;
+    }
+    document.getElementById('progressLabel').textContent = roundIndex + ' / ' + ROUNDS_PER_SESSION;
+    document.getElementById('feedback').textContent = '';
+    document.getElementById('feedback').className = 'feedback';
+    const speakBtn = document.getElementById('speakBtn');
+    if (currentMode === 'taal') speakBtn.classList.remove('hidden');
+    else speakBtn.classList.add('hidden');
+    if (currentMode === 'rekenen') renderMath();
+    else if (currentMode === 'splitsen') renderSplitsen();
+    else renderTaal();
+  }
+
+  function shuffle(arr){
+    for (let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function renderAnswers(options, correctValue, displayFn){
+    const wrap = document.getElementById('answers');
+    wrap.innerHTML = '';
+    shuffle(options).forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'answer-btn';
+      btn.dataset.val = opt;
+      btn.innerHTML = displayFn ? displayFn(opt) : opt;
+      btn.onclick = () => checkAnswer(opt, correctValue, btn);
+      wrap.appendChild(btn);
+    });
+  }
+
+  function checkAnswer(chosen, correct, btnEl){
+    if (locked) return;
+    locked = true;
+    const feedback = document.getElementById('feedback');
+    const allBtns = document.querySelectorAll('.answer-btn');
+    if (chosen === correct){
+      btnEl.classList.add('correct');
+      feedback.textContent = 'Goed zo! ⭐';
+      feedback.className = 'feedback good';
+      stars++; saveStars();
+      document.getElementById('starCount').textContent = stars;
+      logAttempt(true, String(chosen), String(correct));
+      if (stars % 10 === 0){
+        speakWord(randomMilestoneMessage(stars));
+      } else {
+        speakWord(randomCorrectMessage());
+      }
+    } else {
+      btnEl.classList.add('wrong');
+      feedback.textContent = 'Bijna! Het juiste antwoord komt zo.';
+      feedback.className = 'feedback bad';
+      allBtns.forEach(b => { if (b.dataset.val == correct) b.classList.add('correct'); });
+      logAttempt(false, String(chosen), String(correct));
+      speakWord(randomWrongMessage());
+    }
+    allBtns.forEach(b => b.disabled = true);
+    setTimeout(nextRound, 1300);
+  }
+
+  // ---------- rekenen ----------
+  function renderMath(){
+    const useSub = Math.random() < 0.4;
+    let a, b, correct, opText;
+    if (useSub){
+      a = Math.floor(Math.random() * 16) + 4;   // 4..19
+      b = Math.floor(Math.random() * (a - 1)) + 1;
+      correct = a - b;
+      opText = a + ' − ' + b + ' = ?';
+    } else {
+      a = Math.floor(Math.random() * 15) + 1;
+      b = Math.floor(Math.random() * (20 - a)) + 0;
+      b = Math.max(b, 1);
+      correct = a + b;
+      opText = a + ' + ' + b + ' = ?';
+    }
+    document.getElementById('questionText').textContent = opText;
+
+    const options = new Set([correct]);
+    while (options.size < 3){
+      const delta = Math.floor(Math.random() * 5) - 2;
+      const val = correct + delta;
+      if (val >= 0 && val !== correct) options.add(val);
+    }
+    renderAnswers([...options], correct);
+  }
+
+  // ---------- splitsen ----------
+  function dotsHTML(n){
+    const max = 10;
+    let cells = '';
+    for (let i = 0; i < max; i++){
+      cells += i < n ? '<span class="sq"></span>' : '<span class="sq empty"></span>';
+    }
+    return '<div class="number-card">' + cells + '</div>';
+  }
+
+  function renderSplitsen(){
+    const total = Math.floor(Math.random() * 8) + 3; // 3..10
+    const left = Math.floor(Math.random() * (total - 1)) + 1; // 1..total-1
+    const correct = total - left;
+    currentQuestionLabel = total + ' = ' + left + ' + ?';
+
+    document.getElementById('questionText').innerHTML =
+      '<div class="split-house">' +
+        dotsHTML(total) +
+        '<div class="split-row"><span class="split-box">' + dotsHTML(left) + '</span><span class="split-plus">+</span><span class="split-box split-unknown">?</span></div>' +
+      '</div>';
+
+    const options = new Set([correct]);
+    while (options.size < 3){
+      const delta = Math.floor(Math.random() * 5) - 2;
+      const val = total - left + delta;
+      if (val >= 0 && val <= total && val !== correct) options.add(val);
+    }
+    renderAnswers([...options], correct, (v) => dotsHTML(v));
+  }
+
+  // ---------- taal ----------
+  const woorden = [
+    {woord:'kat', missend:1, letters:['a','o','i'], emoji:'🐱'},
+    {woord:'hond', missend:0, letters:['h','b','p'], emoji:'🐶'},
+    {woord:'vis', missend:0, letters:['v','f','w'], emoji:'🐟'},
+    {woord:'zon', missend:2, letters:['n','m','l'], emoji:'☀️'},
+    {woord:'boom', missend:1, letters:['o','a','u'], emoji:'🌳'},
+    {woord:'huis', missend:0, letters:['h','k','d'], emoji:'🏠'},
+    {woord:'appel', missend:0, letters:['a','e','o'], emoji:'🍎'},
+    {woord:'bal', missend:2, letters:['l','r','n'], emoji:'⚽'},
+    {woord:'maan', missend:1, letters:['a','o','e'], emoji:'🌙'},
+    {woord:'ster', missend:0, letters:['s','t','z'], emoji:'⭐'},
+    {woord:'boek', missend:1, letters:['o','a','u'], emoji:'📖'},
+    {woord:'fiets', missend:0, letters:['f','v','w'], emoji:'🚲'}
+  ];
+
+  function renderTaal(){
+    const item = woorden[Math.floor(Math.random() * woorden.length)];
+    const letters = item.woord.split('');
+    const correctLetter = letters[item.missend];
+    letters[item.missend] = '_';
+    const display = letters.join('');
+
+    currentSpeakWord = item.woord;
+    currentQuestionLabel = display + ' (' + item.woord + ')';
+
+    document.getElementById('questionText').innerHTML =
+      '<div class="obj">' + item.emoji + '</div><div style="margin-top:10px;">' + display + '</div>';
+
+    renderAnswers([...item.letters], correctLetter, (v) => v);
+    setTimeout(() => speakWord(currentSpeakWord), 350);
+  }
+</script>
+</body>
+</html>

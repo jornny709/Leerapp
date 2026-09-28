@@ -150,6 +150,29 @@
   :root[data-theme="dark"]{
     --cream:#221D14; --ink:#F5EFE3; --white:#332C1F;
   }
+
+  /* ---- compact layout + status bar safe area ---- */
+  :root{padding-top:0; padding-bottom:0;}
+  html,body{height:auto;}
+  body{min-height:100dvh; align-items:flex-start;}
+  #app{margin:0 auto; padding:calc(env(safe-area-inset-top,0px) + 12px) 14px calc(env(safe-area-inset-bottom,0px) + 12px);}
+  @media (display-mode: standalone){
+    #app{padding-top:max(calc(env(safe-area-inset-top,0px) + 12px), 40px);}
+  }
+  .topbar{margin-bottom:8px;}
+  .exercise-card{padding:14px 14px 16px; border-radius:22px;}
+  .progress-row{margin-bottom:6px;}
+  .question{font-size:34px; margin:2px 0 10px;}
+  .question .obj{font-size:30px;}
+  .split-row{gap:10px; margin-top:8px;}
+  .split-unknown{width:44px; height:44px; font-size:22px;}
+  .number-card{--sq:clamp(11px,2.7vh,17px); grid-template-columns:repeat(2,var(--sq)); grid-auto-rows:var(--sq); gap:4px; padding:6px;}
+  .sq{width:var(--sq); height:var(--sq); border-radius:2px;}
+  .answer-btn .number-card{--sq:clamp(9px,2.1vh,14px); padding:5px; gap:3px; grid-template-columns:repeat(2,var(--sq)); grid-auto-rows:var(--sq);}
+  .answer-btn .sq{width:var(--sq); height:var(--sq);}
+  .answers{grid-template-columns:repeat(3,1fr); gap:8px; align-items:stretch;}
+  .answer-btn{padding:8px 4px; font-size:24px; border-radius:14px; min-height:64px;}
+  .feedback{margin-top:8px; min-height:24px; font-size:18px;}
 </style>
 </head>
 <body>

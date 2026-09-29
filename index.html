@@ -52,6 +52,7 @@
   .choice-rekenen{background:var(--sky);}
   .choice-taal{background:var(--coral);}
   .choice-splitsen{background:var(--grass);}
+  .choice-simon{background:#8B6FD6;}
 
   /* exercise screen */
   .exercise-card{
@@ -92,6 +93,20 @@
   .feedback{text-align:center; font-family:'Baloo 2'; font-weight:700; font-size:20px; min-height:30px; margin-top:16px;}
   .feedback.good{color:var(--grass);}
   .feedback.bad{color:var(--coral);}
+
+  .simon-wrap{max-width:320px; margin:6px auto 0;}
+  .simon-grid{
+    display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:12px;
+    aspect-ratio:1; max-height:52vh; margin:0 auto;
+  }
+  .pad{border:none; border-radius:20px; cursor:pointer; opacity:0.88; transition:opacity .1s, transform .1s;}
+  .pad:active{transform:scale(0.96);}
+  .pad.active{opacity:1; box-shadow:0 0 0 5px rgba(255,255,255,0.6) inset;}
+  .pad-0{background:var(--coral); border-radius:20px 6px 6px 6px;}
+  .pad-1{background:var(--sky); border-radius:6px 20px 6px 6px;}
+  .pad-2{background:var(--sun); border-radius:6px 6px 6px 20px;}
+  .pad-3{background:var(--grass); border-radius:6px 6px 20px 6px;}
+  .simon-msg{text-align:center; font-family:'Baloo 2'; font-weight:700; font-size:18px; margin-top:16px; min-height:26px;}
 
   body.mode-taal .question{font-family:'Andika', sans-serif; letter-spacing:6px;}
   body.mode-taal .answer-btn{font-family:'Andika', sans-serif; font-size:30px;}
@@ -159,6 +174,8 @@
   @media (display-mode: standalone){
     #app{padding-top:max(calc(env(safe-area-inset-top,0px) + 12px), 40px);}
   }
+  .back-btn{color:var(--ink);}
+  .ver{text-align:center; font-size:11px; color:#9a9284; margin-top:10px;}
   .topbar{margin-bottom:8px;}
   .exercise-card{padding:14px 14px 16px; border-radius:22px;}
   .progress-row{margin-bottom:6px;}
@@ -194,9 +211,13 @@
       <button class="choice-card choice-splitsen" onclick="startGame('splitsen')">
         <span class="emoji">🧩</span> Splitsen
       </button>
+      <button class="choice-card choice-simon" onclick="openSimon()">
+        <span class="emoji">🎮</span> Simon
+      </button>
     </div>
     <button class="reset-link" onclick="resetProgress()">Sterren opnieuw beginnen</button>
     <button class="parent-link" onclick="openPasscode()">🔒 Voortgang bekijken (voor ouders)</button>
+    <div class="ver">versie 4</div>
   </div>
 
   <!-- PASSCODE MODAL -->
@@ -221,6 +242,25 @@
     <div id="historySummary" class="history-summary"></div>
     <div id="historyList" class="history-list"></div>
     <button class="reset-link" onclick="clearHistory()">Geschiedenis wissen</button>
+  </div>
+
+  <!-- SIMON -->
+  <div id="simonScreen" class="hidden">
+    <div class="progress-row" style="margin-bottom:10px;">
+      <button class="back-btn" onclick="closeSimon()">← Terug</button>
+      <div id="simonLevel" style="font-family:'Baloo 2'; font-weight:700;"></div>
+    </div>
+    <div class="simon-wrap">
+      <div class="simon-grid">
+        <button class="pad pad-0" data-i="0" onclick="simonTap(0)"></button>
+        <button class="pad pad-1" data-i="1" onclick="simonTap(1)"></button>
+        <button class="pad pad-2" data-i="2" onclick="simonTap(2)"></button>
+        <button class="pad pad-3" data-i="3" onclick="simonTap(3)"></button>
+      </div>
+      <div id="simonMsg" class="simon-msg">Tik op start!</div>
+      <button id="simonStartBtn" class="modal-btn primary" style="max-width:200px; margin:14px auto 0; display:block;" onclick="simonStart()">▶️ Start</button>
+      <div id="simonHigh" class="history-meta" style="text-align:center; margin-top:10px;"></div>
+    </div>
   </div>
 
   <!-- EXERCISE -->
@@ -566,27 +606,67 @@
   }
 
   // ---------- taal ----------
-  const woorden = [
-    {woord:'kat', missend:1, letters:['a','o','i'], emoji:'🐱'},
-    {woord:'hond', missend:0, letters:['h','b','p'], emoji:'🐶'},
-    {woord:'vis', missend:0, letters:['v','f','w'], emoji:'🐟'},
-    {woord:'zon', missend:2, letters:['n','m','l'], emoji:'☀️'},
-    {woord:'boom', missend:1, letters:['o','a','u'], emoji:'🌳'},
-    {woord:'huis', missend:0, letters:['h','k','d'], emoji:'🏠'},
-    {woord:'appel', missend:0, letters:['a','e','o'], emoji:'🍎'},
-    {woord:'bal', missend:2, letters:['l','r','n'], emoji:'⚽'},
-    {woord:'maan', missend:1, letters:['a','o','e'], emoji:'🌙'},
-    {woord:'ster', missend:0, letters:['s','t','z'], emoji:'⭐'},
-    {woord:'boek', missend:1, letters:['o','a','u'], emoji:'📖'},
-    {woord:'fiets', missend:0, letters:['f','v','w'], emoji:'🚲'}
+  // Woorden: [ ] omvat het ontbrekende stuk (1 letter of een dubbele klank als 1 antwoord)
+  const WOORDEN_RAW = [
+    // losse klinkers en medeklinkers
+    '🐱|k[a]t','⚽|b[a]l','🐶|h[o]nd','🐟|v[i]s','☀️|z[o]n','🛏️|b[e]d','🐔|k[i]p','🚌|b[u]s',
+    '🧦|s[o]k','👜|t[a]s','🧥|j[a]s','⭐|st[e]r','💡|l[a]mp','🐦|m[u]s',
+    '🏠|[h]uis','🐟|[v]is','☀️|[z]on','🐱|[k]at','⚽|[b]al','🐶|[h]ond','🐔|ki[p]',
+    // aa
+    '🌙|m[aa]n','🐓|h[aa]n','🧀|k[aa]s','🐵|[aa]p','🍰|t[aa]rt','🐴|p[aa]rd','🐉|dr[aa]k','🕯️|k[aa]rs',
+    // ee
+    '🍐|p[ee]r','🐻|b[ee]r','🦵|b[ee]n','🦆|[ee]nd','🌊|z[ee]',
+    // oo
+    '🌳|b[oo]m','👁️|[oo]g','⛵|b[oo]t','🐾|p[oo]t','🌹|r[oo]s','👂|[oo]r',
+    // uu
+    '🔥|v[uu]r','🧱|m[uu]r',
+    // oe, ie, eu
+    '📖|b[oe]k','🐄|k[oe]','🦶|v[oe]t','🎩|h[oe]d','🌸|bl[oe]m',
+    '🚲|f[ie]ts','🐜|m[ie]r',
+    '👃|n[eu]s','🚪|d[eu]r'
   ];
+  const woorden = WOORDEN_RAW.map(r => {
+    const [emoji, pat] = r.split('|');
+    const i = pat.indexOf('['), j = pat.indexOf(']');
+    return { emoji, voor: pat.slice(0, i), juist: pat.slice(i + 1, j), na: pat.slice(j + 1), woord: pat.replace('[', '').replace(']', '') };
+  });
+
+  const DUBBEL_KERN = ['aa','ee','oo','uu'];
+  const DUBBEL_ALLE = ['aa','ee','oo','uu','oe','ie','eu'];
+  const KLINKERS = ['a','e','i','o','u'];
+  const VERWARREND = {b:['d','p'], d:['b','t'], p:['b','d'], m:['n','w'], n:['m','r'], t:['d','k'], k:['t','g'],
+                      s:['z','f'], v:['f','w'], f:['v','s'], h:['b','k'], l:['r','n'], r:['l','n'], g:['k','h'], w:['m','v'], z:['s','v'], j:['g','y']};
+
+  function kiesVerkeerd(juist){
+    let pool;
+    if (juist.length > 1){
+      pool = DUBBEL_KERN.includes(juist) ? DUBBEL_KERN : DUBBEL_ALLE;
+    } else if (KLINKERS.includes(juist)){
+      pool = KLINKERS;
+    } else {
+      pool = VERWARREND[juist] || ['b','d','k','m','s','t'];
+    }
+    return shuffle(pool.filter(x => x !== juist)).slice(0, 2);
+  }
+
+  // Woorden komen in willekeurige volgorde, zonder herhaling tot alles aan bod kwam
+  let deck = [];
+  let laatsteWoord = null;
+  function volgendWoord(){
+    if (deck.length === 0){
+      deck = shuffle(woorden.map((_, i) => i));
+      if (woorden[deck[deck.length - 1]].woord === laatsteWoord && deck.length > 1){
+        deck.unshift(deck.pop());
+      }
+    }
+    const item = woorden[deck.pop()];
+    laatsteWoord = item.woord;
+    return item;
+  }
 
   function renderTaal(){
-    const item = woorden[Math.floor(Math.random() * woorden.length)];
-    const letters = item.woord.split('');
-    const correctLetter = letters[item.missend];
-    letters[item.missend] = '_';
-    const display = letters.join('');
+    const item = volgendWoord();
+    const display = item.voor + '_'.repeat(item.juist.length) + item.na;
 
     currentSpeakWord = item.woord;
     currentQuestionLabel = display + ' (' + item.woord + ')';
@@ -594,8 +674,107 @@
     document.getElementById('questionText').innerHTML =
       '<div class="obj">' + item.emoji + '</div><div style="margin-top:10px;">' + display + '</div>';
 
-    renderAnswers([...item.letters], correctLetter, (v) => v);
+    renderAnswers([item.juist, ...kiesVerkeerd(item.juist)], item.juist, (v) => v);
     setTimeout(() => speakWord(currentSpeakWord), 350);
+  }
+
+  // ---------- Simon ----------
+  let simonSeq = [];
+  let simonStep = 0;
+  let simonPlaying = false;
+  let simonHigh = 0;
+  try { simonHigh = parseInt(localStorage.getItem('leerapp_simon_high') || '0', 10) || 0; } catch(e) {}
+
+  let audioCtx = null;
+  const PAD_FREQ = [220, 277, 330, 415];
+  function beep(i){
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = PAD_FREQ[i];
+      gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.35);
+    } catch(e) {}
+  }
+
+  function openSimon(){
+    document.getElementById('home').classList.add('hidden');
+    document.getElementById('simonScreen').classList.remove('hidden');
+    simonSeq = []; simonStep = 0; simonPlaying = false;
+    document.getElementById('simonLevel').textContent = '';
+    document.getElementById('simonMsg').textContent = 'Tik op start!';
+    document.getElementById('simonHigh').textContent = simonHigh > 0 ? ('Beste reeks: ' + simonHigh) : '';
+    document.getElementById('simonStartBtn').classList.remove('hidden');
+  }
+  function closeSimon(){
+    simonPlaying = false;
+    document.getElementById('simonScreen').classList.add('hidden');
+    document.getElementById('home').classList.remove('hidden');
+  }
+
+  function simonStart(){
+    simonSeq = []; simonStep = 0;
+    document.getElementById('simonStartBtn').classList.add('hidden');
+    simonNextLevel();
+  }
+
+  function simonNextLevel(){
+    simonSeq.push(Math.floor(Math.random() * 4));
+    simonStep = 0;
+    document.getElementById('simonLevel').textContent = 'Level ' + simonSeq.length;
+    document.getElementById('simonMsg').textContent = 'Kijk goed...';
+    simonPlayback();
+  }
+
+  function simonPlayback(){
+    simonPlaying = true;
+    let i = 0;
+    const step = () => {
+      if (i > 0){
+        document.querySelectorAll('.pad')[simonSeq[i-1]].classList.remove('active');
+      }
+      if (i >= simonSeq.length){
+        simonPlaying = false;
+        document.getElementById('simonMsg').textContent = 'Jouw beurt!';
+        return;
+      }
+      const padEl = document.querySelectorAll('.pad')[simonSeq[i]];
+      padEl.classList.add('active');
+      beep(simonSeq[i]);
+      i++;
+      setTimeout(step, 650);
+    };
+    setTimeout(step, 500);
+  }
+
+  function simonTap(i){
+    if (simonPlaying) return;
+    const padEl = document.querySelectorAll('.pad')[i];
+    padEl.classList.add('active');
+    beep(i);
+    setTimeout(() => padEl.classList.remove('active'), 250);
+
+    if (i === simonSeq[simonStep]){
+      simonStep++;
+      if (simonStep === simonSeq.length){
+        document.getElementById('simonMsg').textContent = 'Top! Volgend level...';
+        if (simonSeq.length > simonHigh){
+          simonHigh = simonSeq.length;
+          try { localStorage.setItem('leerapp_simon_high', String(simonHigh)); } catch(e) {}
+        }
+        setTimeout(simonNextLevel, 900);
+      }
+    } else {
+      document.getElementById('simonMsg').textContent = 'Oeps! Je kwam tot level ' + simonSeq.length + '. Probeer opnieuw!';
+      speakWord(randomWrongMessage());
+      document.getElementById('simonStartBtn').classList.remove('hidden');
+      document.getElementById('simonStartBtn').textContent = '🔁 Opnieuw';
+      simonSeq = []; simonStep = 0;
+    }
   }
 </script>
 </body>
